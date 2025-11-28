@@ -23,3 +23,7 @@ self.addEventListener('notificationclick', (event) => {
         })
     );
 });
+
+self.addEventListener('fetch', (event) => {
+    event.respondWith(fetch(event.request));
+});
