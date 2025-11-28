@@ -53,8 +53,8 @@ const LoginView = ({ onLogin }) => {
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 animate-fade-in">
             <div className="w-full max-w-sm bg-card p-8 rounded-2xl shadow-2xl border border-white/5">
                 <div className="flex justify-center mb-8">
-                    <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center">
-                        <User size={40} className="text-accent" />
+                    <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-lg">
+                        <img src="/app-icon.jpg" alt="Logo" className="w-full h-full object-cover" />
                     </div>
                 </div>
 
@@ -123,8 +123,8 @@ const LoginView = ({ onLogin }) => {
                         type="submit"
                         disabled={!username.trim() || !password.trim() || (!isLoginMode && !confirmPassword.trim())}
                         className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center space-x-2 transition-all ${username.trim() && password.trim() && (isLoginMode || confirmPassword.trim())
-                                ? 'bg-accent text-black hover:bg-opacity-90 shadow-lg hover:shadow-accent/20'
-                                : 'bg-white/10 text-white/30 cursor-not-allowed'
+                            ? 'bg-accent text-black hover:bg-opacity-90 shadow-lg hover:shadow-accent/20'
+                            : 'bg-white/10 text-white/30 cursor-not-allowed'
                             }`}
                     >
                         <span>{isLoginMode ? 'Sign In' : 'Create Account'}</span>
