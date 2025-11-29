@@ -261,10 +261,80 @@ const ScheduleView = ({ events, onAddClick, onSettingsClick, onEventClick, onDel
                         <div className="flex flex-col items-center justify-center text-center pt-20">
                             <Calendar size={80} className="text-cardLight mb-4" strokeWidth={1} />
                             <h2 className="text-white text-xl font-medium mb-1">No events</h2>
-                            <Plus size={32} className="text-white" />
-                        </button >
-        </div >
-                );
+                            <p className="text-textMuted text-sm">Tap '+' to add a new event</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {filteredEvents.map((event, index) => {
+                                const status = getTimeRemaining(event, currentDate);
+                                return (
+                                    <div
+                                        key={index}
+                                        onClick={() => onEventClick && onEventClick(event, 'details')}
+                                        onTouchStart={(e) => handleTouchStart(event, e)}
+                                        onTouchEnd={(e) => handleTouchEnd(event, e)}
+                                        className="bg-card p-4 rounded-lg border-l-4 shadow-md cursor-pointer hover:bg-cardLight transition-colors select-none relative group overflow-hidden"
+                                        style={{
+                                            borderLeftColor: event.color || '#4db6ac',
+                                            touchAction: 'pan-y'
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h3 className="text-white font-bold text-lg">{event.subject}</h3>
+                                                <p className="text-textMuted text-sm">{formatTime12Hour(event.startTime)} - {formatTime12Hour(event.endTime)}</p>
+                                                <div className="flex items-center mt-1 text-xs text-textMuted space-x-2">
+                                                    <span>{event.building}</span>
+                                                    {event.room && <span>• Room {event.room}</span>}
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                {status && (
+                                                    <span className={`text-xs font-bold ${status === 'In Progress' ? 'text-green-400 animate-pulse' :
+                                                        status === 'Finished' ? 'text-textMuted' : 'text-accent'
+                                                        }`}>
+                                                        {status}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between mt-1 text-sm text-textMuted">
+                                            <span style={{ color: event.color || '#4db6ac' }}>{event.type}</span>
+                                        </div>
+                                        {event.teacher && (
+                                            <div className="mt-1 text-sm text-textMuted">
+                                                {event.teacher}
+                                            </div>
+                                        )}
+                                        {event.reminders && event.reminders.length > 0 && (
+                                            <div className="mt-2 flex gap-2">
+                                                {event.reminders.map((rem, i) => (
+                                                    <span key={i} className="text-xs bg-white/10 px-2 py-0.5 rounded text-textMuted">
+                                                        {rem.label || rem}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Swipe Hint Overlay */}
+                                        <div className="absolute inset-y-0 right-0 w-1 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </main>
+
+            {/* Floating Action Button */}
+            <button
+                onClick={onAddClick}
+                className="absolute bottom-24 right-6 w-14 h-14 bg-accent rounded-2xl flex items-center justify-center shadow-lg hover:bg-opacity-90 transition-all z-20"
+            >
+                <Plus size={32} className="text-white" />
+            </button>
+        </div>
+    );
 };
 
-                export default ScheduleView;
+export default ScheduleView;
