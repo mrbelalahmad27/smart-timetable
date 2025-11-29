@@ -134,8 +134,11 @@ const ScheduleView = ({ events, onAddClick, onSettingsClick, onEventClick, onDel
         return a.startTime.localeCompare(b.startTime);
     });
 
+    const isTouch = React.useRef(false);
+
     // Swipe logic
     const handleTouchStart = (event, e) => {
+        isTouch.current = true;
         // Store start coordinates for swipe detection
         e.currentTarget.dataset.startX = e.touches[0].clientX;
         e.currentTarget.dataset.startY = e.touches[0].clientY;
@@ -163,6 +166,14 @@ const ScheduleView = ({ events, onAddClick, onSettingsClick, onEventClick, onDel
             console.log('Tap Detected -> Details');
             onEventClick(event, 'details');
         }
+
+        // Reset touch flag after a short delay to allow onClick to be skipped
+        setTimeout(() => { isTouch.current = false; }, 500);
+    };
+
+    const handleCardClick = (event) => {
+        if (isTouch.current) return; // Ignore click if it was a touch event
+        onEventClick(event, 'details');
     };
 
     return (
@@ -270,7 +281,7 @@ const ScheduleView = ({ events, onAddClick, onSettingsClick, onEventClick, onDel
                                 return (
                                     <div
                                         key={index}
-                                        onClick={() => onEventClick && onEventClick(event, 'details')}
+                                        onClick={() => handleCardClick(event)}
                                         onTouchStart={(e) => handleTouchStart(event, e)}
                                         onTouchEnd={(e) => handleTouchEnd(event, e)}
                                         className="bg-card p-4 rounded-lg border-l-4 shadow-md cursor-pointer hover:bg-cardLight transition-colors select-none relative group overflow-hidden"
