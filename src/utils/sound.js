@@ -1,49 +1,65 @@
-let audioCtx = null;
+// Simple Sound Engine - Uses HTML5 Audio for better compatibility
+
+const audioCache = {};
 
 export const initAudio = () => {
-    if (!audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) {
-            audioCtx = new AudioContext();
+    // Preload all sounds
+    SOUND_OPTIONS.forEach(sound => {
+        if (!audioCache[sound.id]) {
+            const audio = new Audio(sound.id);
+            audio.preload = 'auto';
+            audioCache[sound.id] = audio;
         }
+    });
+};
+
+// Keep track of active audio instances to prevent garbage collection
+const activeSounds = new Set();
+
+export const playNotificationSound = async (type = 'bell') => {
+    // Map 'bell' to a default sound
+    let soundToPlay = type;
+    if (type === 'bell') {
+        soundToPlay = '/sounds/new-notification-1-398650.mp3';
     }
-    if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
+
+    // Check if it's a custom audio file (starts with /sounds/)
+    if (soundToPlay.startsWith('/sounds/')) {
+        try {
+            console.log('Starting playback for:', soundToPlay);
+            const audio = new Audio(soundToPlay);
+            audio.volume = 1.0; // Max volume
+
+            // Add to active set
+            activeSounds.add(audio);
+
+            // Cleanup on end
+            audio.onended = () => {
+                console.log('Playback ended for:', soundToPlay);
+                activeSounds.delete(audio);
+            };
+
+            audio.onerror = (e) => {
+                console.error('Playback error:', e);
+                activeSounds.delete(audio);
+            };
+
+            await audio.play();
+        } catch (error) {
+            console.error(`Failed to play ${soundToPlay}:`, error);
+        }
     }
 };
 
-// Simple beep sound using Web Audio API
-export const playNotificationSound = () => {
-    try {
-        if (!audioCtx) {
-            initAudio();
-        }
+// Custom notification sounds
+const CUSTOM_SOUNDS = [
+    { id: '/sounds/new-notification-1-398650.mp3', label: 'Alynto 1', type: 'file' },
+    { id: '/sounds/new-notification-026-380249.mp3', label: 'Alynto 2', type: 'file' },
+    { id: '/sounds/new-notification-3-398649.mp3', label: 'Alynto 3', type: 'file' },
+    { id: '/sounds/new-notification-444814.mp3', label: 'Alynto 4', type: 'file' },
+    { id: '/sounds/notification-crackle-432435.mp3', label: 'Alynto 5', type: 'file' },
+    { id: '/sounds/notification-power-432434.mp3', label: 'Alynto 6', type: 'file' },
+    { id: '/sounds/notification-sound-effect-372475.mp3', label: 'Alynto 7', type: 'file' }
+];
 
-        if (!audioCtx) return;
-
-        // Ensure context is running
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
-        osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1); // Drop to A4
-
-        // Louder volume (0.5) and longer duration (3s)
-        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.0);
-
-        osc.start();
-        osc.stop(audioCtx.currentTime + 3.0);
-
-    } catch (e) {
-        console.error("Failed to play sound", e);
-    }
-};
+export const SOUND_OPTIONS = CUSTOM_SOUNDS;

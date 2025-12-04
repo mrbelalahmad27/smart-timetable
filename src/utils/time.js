@@ -96,7 +96,7 @@ export const getTimeRemaining = (event, eventDate) => {
     const diffHrs = Math.floor(diff / (1000 * 60 * 60));
     const diffMins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-    if (diffHrs > 24) return `Starts in ${Math.floor(diffHrs / 24)} days`;
-    if (diffHrs > 0) return `Starts in ${diffHrs}h ${diffMins}m`;
-    return `Starts in ${diffMins}m`;
+    if (diffHrs > 24) return `in ${Math.floor(diffHrs / 24)} days`;
+    if (diffHrs > 0) return `in ${diffHrs} hr`;
+    return `in ${diffMins} min`;
 };

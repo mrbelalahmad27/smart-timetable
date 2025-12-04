@@ -4,14 +4,45 @@
 
 @layer base {
     :root {
-        --color-background: #121212;
-        --color-card: #1e1e1e;
-        --color-card-light: #2c2c2c;
-        --color-accent: #4db6ac;
+        --color-background: #09090b;
+        --color-card: rgba(24, 24, 27, 0.7);
+        --color-card-light: rgba(255, 255, 255, 0.05);
+
+        /* Default Theme Colors (will be overridden by JS) */
+        --primary-color: #26a69a;
+        --color-accent: #26a69a;
+
+        /* Semantic Colors */
+        --color-success: #22c55e;
+        --color-warning: #eab308;
+        --color-error: #ef4444;
+        --color-info: #3b82f6;
+
+        /* Text Colors */
+        --color-text-main: #ffffff;
+        --color-text-muted: #9ca3af;
+
+        font-family: 'Inter', sans-serif;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body,
+    #root {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overscroll-behavior-y: none;
     }
 
     body {
-        @apply bg-background text-textMain;
+        @apply bg-background text-white select-none;
+        background-color: #09090b;
+    }
+
+    input,
+    textarea {
+        @apply select-text;
     }
 }
 
@@ -51,6 +82,32 @@
     }
 }
 
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    75% {
+        transform: translateX(5px);
+    }
+}
+
 .animate-slide-in {
     animation: slide-in 0.3s ease-out forwards;
 }
@@ -61,4 +118,36 @@
 
 .animate-slide-right {
     animation: slide-right 0.3s ease-out forwards;
+}
+
+.animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+}
+
+.animate-shake {
+    animation: shake 0.3s ease-in-out;
+}
+
+@layer utilities {
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}
+
+@keyframes glow-pulse {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(38, 166, 154, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(38, 166, 154, 0.8);
+    }
+}
+
+.animate-glow-pulse {
+    animation: glow-pulse 2s infinite ease-in-out;
 }

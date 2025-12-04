@@ -1,183 +1,347 @@
-import React, { useState, useEffect } from 'react';
-import { Menu, Calendar, Check, Plus, Settings, User, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Menu, Calendar as CalendarIcon, Plus, Settings, User, X, ChevronLeft, ChevronRight, LayoutDashboard, BookOpen, Brain, Coffee, Clock, MapPin, Trash2, Building, GraduationCap } from 'lucide-react';
 import { formatTime12Hour, getTimeRemaining } from '../utils/time';
+import WeeklyView from './WeeklyView';
+import AssignmentView from './AssignmentView';
+import PomodoroView from './PomodoroView';
+import { getRandomQuote, QUOTES } from '../utils/quotes';
 
 const Sidebar = ({ isOpen, onClose, onSettingsClick, currentUser, onLogout }) => {
+    const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
+    const quotesList = QUOTES.general;
+
+    // Swipe Logic
+    const touchStart = useRef(null);
+    const touchEnd = useRef(null);
+    const minSwipeDistance = 50;
+
+    const handleNextQuote = () => {
+        setCurrentQuoteIndex((prev) => (prev + 1) % quotesList.length);
+    };
+
+    const handlePrevQuote = () => {
+        setCurrentQuoteIndex((prev) => (prev - 1 + quotesList.length) % quotesList.length);
+    };
+
+    // Auto-rotate quotes
+    useEffect(() => {
+        const interval = setInterval(handleNextQuote, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Keyboard navigation
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (e) => {
+            if (e.key === 'ArrowRight') handleNextQuote();
+            if (e.key === 'ArrowLeft') handlePrevQuote();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen]);
+
+    const onTouchStart = (e) => {
+        touchEnd.current = null;
+        touchStart.current = e.targetTouches[0].clientX;
+    };
+
+    const onTouchMove = (e) => {
+        touchEnd.current = e.targetTouches[0].clientX;
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart.current || !touchEnd.current) return;
+        const distance = touchStart.current - touchEnd.current;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe) handleNextQuote();
+        if (isRightSwipe) handlePrevQuote();
+    };
+
     return (
         <>
-            {/* Backdrop */}
             {isOpen && (
                 <div
-                    className="absolute inset-0 bg-black/50 z-40 transition-opacity"
+                    className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[90] transition-opacity cursor-pointer animate-fade-in"
                     onClick={onClose}
                 />
             )}
+            <div className={`absolute top-0 left-0 h-full w-80 bg-[#0f172a] border-r border-white/10 z-[100] transform transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl flex flex-col`}>
 
-            {/* Sidebar */}
-            <div className={`absolute top-0 left-0 h-full w-64 bg-card z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl`}>
-                <div className="p-6 flex flex-col h-full">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-xl font-bold text-white">Menu</h2>
-                        <button onClick={onClose} className="text-textMuted hover:text-white">
-                            <X size={24} />
+                {/* Premium Header */}
+                <div className="p-6 bg-gradient-to-br from-accent/20 to-transparent border-b border-white/5">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-accent to-accent/80 flex items-center justify-center text-black font-bold shadow-lg shadow-accent/20 ring-2 ring-white/10">
+                                {currentUser?.email ? currentUser.email[0].toUpperCase() : <User size={24} />}
+                            </div>
+                            <div>
+                                <h3 className="text-white font-bold text-lg truncate max-w-[140px]">{currentUser?.email?.split('@')[0] || 'User'}</h3>
+                                <div className="flex items-center gap-1.5 bg-accent/10 px-2 py-0.5 rounded-full w-fit mt-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>
+                                    <p className="text-accent text-[10px] uppercase tracking-widest font-bold">Premium</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/50 hover:text-white active:scale-95">
+                            <X size={20} />
                         </button>
                     </div>
 
-                    <div className="mb-6 px-2">
-                        <p className="text-textMuted text-sm">Signed in as</p>
-                        <p className="text-white font-bold text-lg truncate">{currentUser}</p>
-                    </div>
-
-                    <div className="space-y-4 flex-1">
+                    {/* Navigation Buttons */}
+                    <div className="space-y-3">
                         <button
-                            onClick={() => {
-                                onClose();
-                                onSettingsClick();
-                            }}
-                            className="flex items-center text-white space-x-4 w-full hover:bg-white/5 p-2 rounded-lg transition-colors"
+                            onClick={() => { onClose(); onSettingsClick(); }}
+                            className="w-full flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-accent/30 transition-all group active:scale-[0.98]"
                         >
-                            <Settings size={20} />
-                            <span>Settings</span>
+                            <div className="p-2 rounded-lg bg-accent/10 text-accent group-hover:bg-accent group-hover:text-black transition-colors shadow-sm">
+                                <Settings size={20} />
+                            </div>
+                            <span className="font-bold text-white">Settings</span>
                         </button>
 
                         <button
-                            onClick={() => {
-                                onClose();
-                                onLogout();
-                            }}
-                            className="flex items-center text-[#ef5350] space-x-4 w-full hover:bg-white/5 p-2 rounded-lg transition-colors"
+                            onClick={() => { onClose(); onLogout(); }}
+                            className="w-full flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-error/10 hover:border-error/30 transition-all group active:scale-[0.98]"
                         >
-                            <User size={20} />
-                            <span>Sign Out</span>
+                            <div className="p-2 rounded-lg bg-error/10 text-error group-hover:bg-error group-hover:text-white transition-colors shadow-sm">
+                                <User size={20} />
+                            </div>
+                            <span className="font-bold text-white">Sign Out</span>
                         </button>
                     </div>
+                </div>
 
-                    <div className="pt-6 border-t border-white/10 text-center">
-                        <p className="text-accent text-lg" style={{ fontFamily: '"Brush Script MT", "Comic Sans MS", cursive' }}>
-                            Mysterious person
-                        </p>
+                {/* Quote Card */}
+                <div className="p-6 flex-1 flex flex-col justify-center">
+                    <div
+                        className="bg-[#0f172a] border border-white/10 rounded-2xl p-6 relative overflow-hidden group touch-pan-y shadow-xl hover:shadow-2xl transition-shadow"
+                        onTouchStart={onTouchStart}
+                        onTouchMove={onTouchMove}
+                        onTouchEnd={onTouchEnd}
+                    >
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <Brain size={64} className="text-accent" />
+                        </div>
+
+                        <div className="flex justify-center mb-6 relative z-10">
+                            <div className="p-3 rounded-full bg-accent/10 text-accent">
+                                <Brain size={24} />
+                            </div>
+                        </div>
+
+                        <div className="min-h-[100px] flex items-center justify-center text-center relative z-10">
+                            <p className="text-base font-medium text-white/90 leading-relaxed transition-all duration-300 italic">
+                                "{quotesList[currentQuoteIndex]}"
+                            </p>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-6 px-2 relative z-10">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handlePrevQuote(); }}
+                                className="p-2 text-white/20 hover:text-accent transition-colors active:scale-90"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            <div className="flex gap-1.5 justify-center">
+                                {quotesList.map((_, i) => (
+                                    <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === currentQuoteIndex ? 'w-6 bg-accent' : 'w-1.5 bg-white/10'}`} />
+                                ))}
+                            </div>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleNextQuote(); }}
+                                className="p-2 text-white/20 hover:text-accent transition-colors active:scale-90"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
                     </div>
+                </div>
+
+                {/* Footer Branding */}
+                <div className="p-8 text-center relative">
+                    <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                    <h2 className="text-2xl font-black tracking-[0.2em] text-accent mb-2 mt-4 drop-shadow-sm">ALYNTO</h2>
+                    <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">PREMIUM SCHEDULER</p>
+                    <p className="text-[10px] text-white/30 mt-6 tracking-wider font-medium">© 2025 ALYNTO INC.</p>
                 </div>
             </div>
         </>
     );
 };
 
-const ScheduleView = ({ events, onAddClick, onSettingsClick, onEventClick, onDeleteEvent, currentDate, onDateChange, currentUser, onLogout }) => {
+
+const ScheduleView = ({ events = [], tasks = [], habits = [], preferences, onUpdateTask, currentDate, onDateChange, currentUser, onLogout, viewMode, onViewModeChange, onDeleteEvent, onAddClick, onSettingsClick, onPomodoroClick, onEventClick, activeTab = 'schedule', onTabChange }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [direction, setDirection] = useState(0); // -1 for left, 1 for right
-    const [eventToDelete, setEventToDelete] = useState(null); // For confirmation modal
+    const [eventToDelete, setEventToDelete] = useState(null);
+    const dateInputRef = useRef(null);
+    const [, setTick] = useState(0); // Force re-render
 
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-    const currentDayName = days[currentDate.getDay()];
-    const currentDateNum = currentDate.getDate();
-    const currentMonthName = months[currentDate.getMonth()];
-
-    // Rolling 7-day navigation logic
-    const handlePrevDay = () => {
-        setDirection(-1);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const prevDate = new Date(currentDate);
-        prevDate.setDate(currentDate.getDate() - 1);
-        prevDate.setHours(0, 0, 0, 0);
-
-        // If prev date is before today, loop to today + 6
-        if (prevDate < today) {
-            const nextWeek = new Date(today);
-            nextWeek.setDate(today.getDate() + 6);
-            onDateChange(nextWeek);
-        } else {
-            onDateChange(prevDate);
-        }
-    };
-
-    const handleNextDay = () => {
-        setDirection(1);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const nextDate = new Date(currentDate);
-        nextDate.setDate(currentDate.getDate() + 1);
-        nextDate.setHours(0, 0, 0, 0);
-
-        const maxDate = new Date(today);
-        maxDate.setDate(today.getDate() + 6);
-
-        // If next date is beyond today + 6, loop back to today
-        if (nextDate > maxDate) {
-            onDateChange(today);
-        } else {
-            onDateChange(nextDate);
-        }
-    };
-
-    // Force update every minute to refresh countdowns
-    const [, setTick] = useState(0);
+    // Update UI every minute to keep "In Progress" / "Time Remaining" accurate
     useEffect(() => {
-        const timer = setInterval(() => setTick(t => t + 1), 60000);
+        const timer = setInterval(() => {
+            setTick(t => t + 1);
+        }, 60000);
         return () => clearInterval(timer);
     }, []);
 
-    // Filter events for the current day
-    const filteredEvents = events.filter(event => {
-        if (event.repeat === 'Daily') return true;
-        if (event.repeat === 'Weekly' && event.repeatDay === currentDayName) return true;
-        // For 'Never' or others, we default to showing if repeatDay matches (assuming weekly schedule logic)
-        if (event.repeatDay === currentDayName) return true;
-        return false;
-    }).sort((a, b) => {
-        // Sort by start time
-        return a.startTime.localeCompare(b.startTime);
-    });
+    // Ensure activeTab is valid
+    const validTabs = ['schedule', 'assignments', 'timer'];
+    const currentTab = validTabs.includes(activeTab) ? activeTab : 'schedule';
 
-    const isTouch = React.useRef(false);
+    // Swipe Logic
+    const touchStart = useRef(null);
+    const touchStartY = useRef(null);
+    const touchEnd = useRef(null);
+    const minSwipeDistance = 50;
 
-    // Swipe logic
-    const handleTouchStart = (event, e) => {
-        isTouch.current = true;
-        // Store start coordinates for swipe detection
-        e.currentTarget.dataset.startX = e.touches[0].clientX;
-        e.currentTarget.dataset.startY = e.touches[0].clientY;
+    const onTouchStart = (e) => {
+        touchEnd.current = null;
+        touchStart.current = e.targetTouches[0].clientX;
+        touchStartY.current = e.targetTouches[0].clientY;
     };
 
-    const handleTouchEnd = (event, e) => {
-        // Swipe Detection
-        const startX = parseFloat(e.currentTarget.dataset.startX);
-        const startY = parseFloat(e.currentTarget.dataset.startY);
-        const endX = e.changedTouches[0].clientX;
-        const endY = e.changedTouches[0].clientY;
-        const diffX = endX - startX;
-        const diffY = endY - startY;
+    const onTouchMove = (e) => {
+        touchEnd.current = e.targetTouches[0].clientX;
+    };
 
-        console.log(`Swipe: X=${diffX}, Y=${diffY}`); // Debugging
+    const onTouchEnd = (e) => {
+        if (!touchStart.current || !touchEnd.current) return;
 
-        // Check for horizontal swipe (right) and ensure it's not a vertical scroll
-        // diffX > 80 means swipe right (increased from 50)
-        // Stricter Y threshold (30) to prevent accidental swipes while scrolling
-        if (diffX > 80 && Math.abs(diffY) < 30) {
-            console.log('Swipe Right Detected -> Notes');
-            onEventClick(event, 'notes');
-        } else if (Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
-            // Treat as click if movement is minimal
-            console.log('Tap Detected -> Details');
-            onEventClick(event, 'details');
+        const distanceX = touchStart.current - touchEnd.current;
+        const distanceY = touchStartY.current - e.changedTouches[0].clientY;
+
+        // Ignore if vertical scroll is dominant
+        if (Math.abs(distanceY) > Math.abs(distanceX)) return;
+
+        const isLeftSwipe = distanceX > minSwipeDistance;
+        const isRightSwipe = distanceX < -minSwipeDistance;
+
+        if (isLeftSwipe) {
+            handleDateChange(1);
+        } else if (isRightSwipe) {
+            handleDateChange(-1);
         }
-
-        // Reset touch flag after a short delay to allow onClick to be skipped
-        setTimeout(() => { isTouch.current = false; }, 500);
     };
 
-    const handleCardClick = (event) => {
-        if (isTouch.current) return; // Ignore click if it was a touch event
-        onEventClick(event, 'details');
+    // Mouse Swipe Logic
+    const isDragging = useRef(false);
+
+
+
+
+
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const handleMouseMove = (e) => {
+            if (!isDragging.current) return;
+            touchEnd.current = e.clientX;
+        };
+
+        const handleMouseUp = (e) => {
+            if (!isDragging.current) return;
+            isDragging.current = false;
+
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+
+            if (!touchStart.current || !touchEnd.current) return;
+
+            const distanceX = touchStart.current - touchEnd.current;
+            const distanceY = touchStartY.current - e.clientY;
+
+            if (Math.abs(distanceY) > Math.abs(distanceX)) return;
+
+            const isLeftSwipe = distanceX > minSwipeDistance;
+            const isRightSwipe = distanceX < -minSwipeDistance;
+
+            if (isLeftSwipe) {
+                handleDateChange(1);
+            } else if (isRightSwipe) {
+                handleDateChange(-1);
+            }
+        };
+
+        const onMouseDown = (e) => {
+            // Check if target is inside our container
+            if (containerRef.current && containerRef.current.contains(e.target)) {
+                // Ignore if target is draggable or inside a draggable element (for WeeklyView DnD)
+                if (e.target.closest('[draggable="true"]')) return;
+
+                isDragging.current = true;
+                touchEnd.current = null;
+                touchStart.current = e.clientX;
+                touchStartY.current = e.clientY;
+
+                window.addEventListener('mousemove', handleMouseMove);
+                window.addEventListener('mouseup', handleMouseUp);
+            }
+        };
+
+        // Use capture phase to ensure we get the event
+        window.addEventListener('mousedown', onMouseDown, true);
+
+        return () => {
+            window.removeEventListener('mousedown', onMouseDown, true);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [currentDate]);
+
+
+
+    const handleDeleteClick = (event) => {
+        setEventToDelete(event);
     };
+
+    const confirmDelete = () => {
+        if (eventToDelete && onDeleteEvent) {
+            onDeleteEvent(eventToDelete.id);
+            setEventToDelete(null);
+        }
+    };
+
+    const handleDateChange = (days) => {
+        const newDate = new Date(currentDate);
+        newDate.setDate(newDate.getDate() + days);
+        onDateChange(newDate);
+    };
+
+    const handleCalendarClick = () => {
+        if (dateInputRef.current) {
+            dateInputRef.current.showPicker();
+        }
+    };
+
+    const handleDateInputChange = (e) => {
+        if (e.target.value) {
+            const [year, month, day] = e.target.value.split('-').map(Number);
+            const newDate = new Date(year, month - 1, day);
+            onDateChange(newDate);
+        }
+    };
+
+    // Filter events for the current date
+    const filteredEvents = events.filter(event => {
+        const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+        if (event.repeat === 'Weekly' && event.repeatDay === dayName) return true;
+        if (event.repeat === 'Daily') return true;
+        if (event.date) {
+            const eventDate = new Date(event.date);
+            return eventDate.toDateString() === currentDate.toDateString();
+        }
+        if (event.repeatDay === dayName) return true;
+        return false;
+    }).sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     return (
-        <div className="flex flex-col h-full relative overflow-hidden">
+        <div className="flex flex-col h-screen overflow-hidden relative bg-background text-white font-sans pb-0">
             <Sidebar
                 isOpen={isMenuOpen}
                 onClose={() => setIsMenuOpen(false)}
@@ -186,27 +350,29 @@ const ScheduleView = ({ events, onAddClick, onSettingsClick, onEventClick, onDel
                 onLogout={onLogout}
             />
 
-            {/* Delete Confirmation Modal */}
+            <input
+                type="date"
+                ref={dateInputRef}
+                className="absolute top-0 left-0 opacity-0 pointer-events-none"
+                onChange={handleDateInputChange}
+            />
+
+            {/* Delete Modal */}
             {eventToDelete && (
-                <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-card border border-white/10 rounded-xl p-6 w-full max-w-sm shadow-2xl transform scale-100 transition-all">
+                <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-[#1E1E1E] border border-white/10 rounded-2xl p-6 w-[90%] max-w-sm shadow-2xl scale-100 animate-scale-in">
                         <h3 className="text-xl font-bold text-white mb-2">Delete Event?</h3>
-                        <p className="text-textMuted mb-6">
-                            Are you sure you want to delete <span className="text-white font-medium">"{eventToDelete.subject}"</span>?
-                        </p>
+                        <p className="text-textMuted mb-6">Are you sure you want to delete "{eventToDelete.subject}"?</p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setEventToDelete(null)}
-                                className="flex-1 py-3 bg-white/10 text-white rounded-lg font-medium hover:bg-white/20 transition-colors"
+                                className="flex-1 py-3 rounded-xl bg-white/5 text-white font-medium hover:bg-white/10 transition-colors active:scale-95"
                             >
                                 Cancel
                             </button>
                             <button
-                                onClick={() => {
-                                    onDeleteEvent(eventToDelete);
-                                    setEventToDelete(null);
-                                }}
-                                className="flex-1 py-3 bg-[#ef5350] text-white rounded-lg font-bold hover:bg-opacity-90 transition-colors"
+                                onClick={confirmDelete}
+                                className="flex-1 py-3 rounded-xl bg-error/20 text-error font-bold hover:bg-error/30 transition-colors active:scale-95"
                             >
                                 Delete
                             </button>
@@ -215,135 +381,251 @@ const ScheduleView = ({ events, onAddClick, onSettingsClick, onEventClick, onDel
                 </div>
             )}
 
-            {/* Header */}
-            <header className="flex flex-col p-4 pt-6">
-                <div className="flex items-center mb-2">
-                    <button
-                        className="text-white mr-4 hover:bg-white/10 p-1 rounded-full transition-colors"
-                        onClick={() => setIsMenuOpen(true)}
-                    >
-                        <Menu size={24} />
-                    </button>
-                    <h1 className="text-xl font-bold text-white">Schedule</h1>
-                </div>
+            {/* Main Content Area */}
+            <div ref={containerRef} className="flex-1 flex flex-col relative overflow-hidden pb-0 touch-pan-y select-none"
+                onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
 
-                {/* Calendar Picker */}
-                <div className="relative">
-                    <input
-                        type="date"
-                        id="date-picker"
-                        className="absolute opacity-0 w-full h-full cursor-pointer z-10"
-                        onChange={(e) => {
-                            if (e.target.value) {
-                                const [year, month, day] = e.target.value.split('-').map(Number);
-                                const newDate = new Date(year, month - 1, day);
-                                onDateChange(newDate);
-                            }
-                        }}
-                    />
-                    <button className="flex items-center text-accent font-medium text-sm bg-white/5 px-3 py-2 rounded-lg w-full hover:bg-white/10 transition-colors">
-                        <Calendar size={16} className="mr-2" />
-                        <span>Select Date</span>
-                    </button>
-                </div>
-            </header>
+                {/* Schedule Tab */}
+                <div style={{ display: currentTab === 'schedule' ? 'flex' : 'none' }} className="flex-1 flex flex-col overflow-y-auto no-scrollbar overscroll-y-none pt-20 pb-32">
+                    {/* Floating Header Pill (Attached to Top) */}
+                    <div className="fixed top-0 left-1/2 transform -translate-x-1/2 z-40 w-full max-w-md px-1 pt-1">
+                        <div className="bg-[#1E1E1E] border border-white/10 rounded-2xl p-2 pl-4 pr-2 shadow-xl flex items-center justify-between backdrop-blur-md bg-opacity-95">
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setIsMenuOpen(true)} className="text-white/70 hover:text-white transition-colors active:scale-95 p-1">
+                                    <Menu size={28} />
+                                </button>
+                                <h1 className="text-xl font-bold tracking-tight text-white">Schedule</h1>
+                            </div>
 
-            {/* Date Row with Navigation */}
-            <div className="flex justify-between items-center px-4 py-2 border-b border-white/5">
-                <button onClick={handlePrevDay} className="text-textMuted hover:text-white p-1">
-                    <ChevronLeft size={24} />
-                </button>
-                <div className="text-center">
-                    <div className="text-2xl font-bold text-white">{currentDayName}</div>
-                    <div className="text-sm text-accent font-medium">{currentDateNum} {currentMonthName}</div>
-                </div>
-                <button onClick={handleNextDay} className="text-textMuted hover:text-white p-1">
-                    <ChevronRight size={24} />
-                </button>
-            </div>
-
-            {/* Main Content with Animation */}
-            <main className="flex-1 overflow-y-auto p-4 relative overflow-x-hidden pb-32">
-                <div
-                    key={currentDate.toISOString()}
-                    className={`min-h-full animate-slide-${direction === 0 ? 'in' : direction > 0 ? 'left' : 'right'}`}
-                >
-                    {filteredEvents.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center text-center pt-20">
-                            <Calendar size={80} className="text-cardLight mb-4" strokeWidth={1} />
-                            <h2 className="text-white text-xl font-medium mb-1">No events</h2>
-                            <p className="text-textMuted text-sm">Tap '+' to add a new event</p>
+                            <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
+                                <button
+                                    onClick={() => onViewModeChange('daily')}
+                                    className={`px-6 py-3 rounded-xl text-xs font-bold transition-all active:scale-95 ${viewMode === 'daily' ? 'bg-accent text-black shadow-sm' : 'text-textMuted hover:text-white'}`}
+                                >
+                                    Day
+                                </button>
+                                <button
+                                    onClick={() => onViewModeChange('weekly')}
+                                    className={`px-6 py-3 rounded-xl text-xs font-bold transition-all active:scale-95 ${viewMode === 'weekly' ? 'bg-accent text-black shadow-sm' : 'text-textMuted hover:text-white'}`}
+                                >
+                                    Week
+                                </button>
+                            </div>
                         </div>
+                    </div>
+
+                    {viewMode === 'weekly' ? (
+                        <WeeklyView
+                            events={events}
+                            tasks={tasks}
+                            habits={habits}
+                            currentDate={currentDate}
+                            onDateChange={onDateChange}
+                            onEventClick={onEventClick}
+                            onUpdateTask={onUpdateTask}
+                        />
                     ) : (
-                        <div className="space-y-3">
-                            {filteredEvents.map((event, index) => {
-                                const status = getTimeRemaining(event, currentDate);
-                                return (
+                        <div className="px-6 pb-0 space-y-4">
+                            {/* Date Header */}
+                            <div className="flex items-center justify-between mb-2 px-2 mt-1">
+                                <div>
+                                    <h2 className="text-3xl font-black bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent tracking-tight">
+                                        {currentDate.toLocaleDateString('en-US', { weekday: 'long' })}
+                                    </h2>
+                                </div>
+                                <div className="flex items-center gap-2 bg-[#1E1E1E] rounded-xl p-1 border border-white/5 shadow-sm">
+                                    <button onClick={() => handleDateChange(-1)} className="p-1.5 hover:text-accent transition-colors active:scale-90">
+                                        <ChevronLeft size={20} />
+                                    </button>
                                     <div
-                                        key={index}
-                                        onClick={() => handleCardClick(event)}
-                                        onTouchStart={(e) => handleTouchStart(event, e)}
-                                        onTouchEnd={(e) => handleTouchEnd(event, e)}
-                                        className="bg-card p-4 rounded-lg border-l-4 shadow-md cursor-pointer hover:bg-cardLight transition-colors select-none relative group overflow-hidden"
-                                        style={{
-                                            borderLeftColor: event.color || '#4db6ac',
-                                            touchAction: 'pan-y'
-                                        }}
+                                        onClick={handleCalendarClick}
+                                        className="text-accent font-bold text-sm cursor-pointer min-w-[80px] text-center uppercase tracking-wider"
                                     >
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h3 className="text-white font-bold text-lg">{event.subject}</h3>
-                                                <p className="text-textMuted text-sm">{formatTime12Hour(event.startTime)} - {formatTime12Hour(event.endTime)}</p>
-                                                <div className="flex items-center mt-1 text-xs text-textMuted space-x-2">
-                                                    <span>{event.building}</span>
-                                                    {event.room && <span>• Room {event.room}</span>}
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                {status && (
-                                                    <span className={`text-xs font-bold ${status === 'In Progress' ? 'text-green-400 animate-pulse' :
-                                                        status === 'Finished' ? 'text-textMuted' : 'text-accent'
+                                        {currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                    </div>
+                                    <button onClick={() => handleDateChange(1)} className="p-1.5 hover:text-accent transition-colors active:scale-90">
+                                        <ChevronRight size={20} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Stats/Summary Row */}
+                            <div className="flex items-center justify-end gap-2 mb-6">
+                                <span className="text-[9px] font-bold px-2 py-1 rounded-full bg-[#1E1E1E] border border-white/5 text-textMuted uppercase tracking-wider shadow-sm">
+                                    {filteredEvents.length} Events
+                                </span>
+                                <span className="text-[9px] font-bold px-2 py-1 rounded-full bg-[#1E1E1E] border border-white/5 text-textMuted uppercase tracking-wider shadow-sm">
+                                    {habits.length} Habits
+                                </span>
+                            </div>
+
+                            {filteredEvents.length > 0 ? (
+                                filteredEvents.map((event, index) => {
+                                    const nextTime = getTimeRemaining(event, event.date || currentDate);
+                                    return (
+                                        <div
+                                            key={event.id || index}
+                                            onClick={() => onEventClick(event)}
+                                            style={{ borderColor: event.color || 'rgba(255,255,255,0.1)' }}
+                                            className="bg-[#1E1E1E] border-2 rounded-2xl p-5 relative group overflow-hidden hover:shadow-lg transition-all cursor-pointer shadow-md hover:-translate-y-1 active:scale-[0.99] duration-300"
+                                        >
+                                            <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-bl-full -mr-4 -mt-4 transition-all group-hover:bg-accent/10"></div>
+
+                                            <div className="flex justify-between items-start mb-4 relative z-10">
+                                                <h3 className="text-white font-bold text-xl leading-tight max-w-[70%]">{event.subject}</h3>
+                                                {nextTime && (
+                                                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border shadow-sm ${nextTime === 'In Progress'
+                                                        ? 'bg-accent text-black border-accent animate-glow-pulse'
+                                                        : 'bg-accent/10 text-accent border-accent/20'
                                                         }`}>
-                                                        {status}
+                                                        {nextTime}
                                                     </span>
                                                 )}
                                             </div>
-                                        </div>
-                                        <div className="flex justify-between mt-1 text-sm text-textMuted">
-                                            <span style={{ color: event.color || '#4db6ac' }}>{event.type}</span>
-                                        </div>
-                                        {event.teacher && (
-                                            <div className="mt-1 text-sm text-textMuted">
-                                                {event.teacher}
-                                            </div>
-                                        )}
-                                        {event.reminders && event.reminders.length > 0 && (
-                                            <div className="mt-2 flex gap-2">
-                                                {event.reminders.map((rem, i) => (
-                                                    <span key={i} className="text-xs bg-white/10 px-2 py-0.5 rounded text-textMuted">
-                                                        {rem.label || rem}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
 
-                                        {/* Swipe Hint Overlay */}
-                                        <div className="absolute inset-y-0 right-0 w-1 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <div className="space-y-3 mb-4 relative z-10">
+                                                <div className="flex items-center gap-3 text-textMuted text-sm">
+                                                    <div className="p-1.5 rounded-lg bg-white/5 text-accent">
+                                                        <Clock size={14} />
+                                                    </div>
+                                                    <span className="font-medium text-white/90">{formatTime12Hour(event.startTime)} - {formatTime12Hour(event.endTime)}</span>
+                                                </div>
+                                                {event.room && (
+                                                    <div className="flex items-center gap-3 text-textMuted text-sm">
+                                                        <div className="p-1.5 rounded-lg bg-white/5 text-accent">
+                                                            <MapPin size={14} />
+                                                        </div>
+                                                        <span>{event.building ? `${event.building} • ` : ''}{event.room}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center gap-2 mt-4 relative z-10">
+                                                {event.type && (
+                                                    <span className="text-[10px] font-bold px-3 py-1.5 rounded-lg bg-error/10 text-error border border-error/20 uppercase tracking-wider">
+                                                        {event.type}
+                                                    </span>
+                                                )}
+                                                {event.teacher && (
+                                                    <span className="text-[10px] font-bold px-3 py-1.5 rounded-lg bg-[#2A2A2A] text-textMuted border border-white/5 uppercase tracking-wider">
+                                                        {event.teacher}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteClick(event); }}
+                                                className="absolute bottom-4 right-4 p-2 text-white/10 hover:text-error transition-colors opacity-0 group-hover:opacity-100 active:scale-90 z-20"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="flex-1 flex flex-col items-center justify-center text-center opacity-60 min-h-[50vh]">
+                                    <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6 animate-pulse-slow">
+                                        <Coffee size={40} className="text-accent" />
                                     </div>
-                                );
-                            })}
+                                    <p className="text-white font-bold text-xl mb-2">No events today</p>
+                                    <p className="text-sm text-textMuted max-w-[200px]">You're all caught up! Enjoy your free time or add a new task.</p>
+                                </div>
+                            )}
+
+                            {habits.map((habit, index) => (
+                                <div
+                                    key={habit.id || `habit-${index}`}
+                                    onClick={() => onEventClick(habit)}
+                                    style={{ borderColor: habit.color ? `${habit.color}50` : 'rgba(168, 85, 247, 0.5)' }}
+                                    className="bg-[#1E1E1E] border rounded-2xl p-5 relative group overflow-hidden transition-all cursor-pointer shadow-lg hover:shadow-2xl hover:-translate-y-1 active:scale-[0.99] duration-300 opacity-90"
+                                >
+                                    <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: habit.color || '#a855f7' }}></div>
+                                    <div className="flex justify-between items-start pl-2">
+                                        <div>
+                                            <h3 className="text-white font-bold text-lg">{habit.subject}</h3>
+                                            <div className="flex items-center text-textMuted text-sm mt-2 gap-3">
+                                                <span className="flex items-center gap-2" style={{ color: habit.color || '#c084fc' }}>
+                                                    <Clock size={14} /> {habit.duration}m
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <span
+                                            className="text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider border"
+                                            style={{
+                                                backgroundColor: habit.color ? `${habit.color}15` : 'rgba(168, 85, 247, 0.1)',
+                                                color: habit.color || '#c084fc',
+                                                borderColor: habit.color ? `${habit.color}30` : 'rgba(168, 85, 247, 0.2)'
+                                            }}
+                                        >
+                                            Habit
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
-            </main>
 
-            {/* Floating Action Button */}
-            <button
-                onClick={onAddClick}
-                className="absolute bottom-24 right-6 w-14 h-14 bg-accent rounded-2xl flex items-center justify-center shadow-lg hover:bg-opacity-90 transition-all z-20"
-            >
-                <Plus size={32} className="text-white" />
-            </button>
+                {/* Assignments Tab */}
+                <div style={{ display: currentTab === 'assignments' ? 'block' : 'none' }} className="h-full overflow-hidden">
+                    <AssignmentView
+                        tasks={tasks}
+                        onUpdateTask={onUpdateTask}
+                        onAddClick={onAddClick}
+                        onEditTask={onEventClick}
+                        onBack={() => onTabChange('schedule')}
+                    />
+                </div>
+
+                {/* Pomodoro Tab */}
+                <div style={{ display: currentTab === 'timer' ? 'block' : 'none' }} className="h-full overflow-hidden">
+                    <PomodoroView tasks={tasks} preferences={preferences} onBack={() => onTabChange('schedule')} />
+                </div>
+            </div>
+
+            {/* Floating Bottom Navigation (The "Pill") */}
+            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-50 w-[90%] max-w-md">
+                <div className="bg-[#1E1E1E]/90 backdrop-blur-2xl border border-white/10 rounded-3xl p-2 shadow-2xl shadow-black/50 flex items-center justify-between px-6 ring-1 ring-white/5">
+                    <button
+                        onClick={() => onTabChange('schedule')}
+                        className={`flex flex-col items-center gap-1 transition-all duration-300 ${currentTab === 'schedule' ? 'text-accent scale-110' : 'text-white/40 hover:text-white active:scale-95'}`}
+                    >
+                        <div className={`p-1 rounded-lg transition-colors ${currentTab === 'schedule' ? 'bg-accent/10' : 'bg-transparent'}`}>
+                            <LayoutDashboard size={20} strokeWidth={currentTab === 'schedule' ? 2.5 : 2} />
+                        </div>
+                        <span className="text-[10px] font-bold">Schedule</span>
+                    </button>
+
+                    <button
+                        onClick={() => onTabChange('assignments')}
+                        className={`flex flex-col items-center gap-1 transition-all duration-300 ${currentTab === 'assignments' ? 'text-accent scale-110' : 'text-white/40 hover:text-white active:scale-95'}`}
+                    >
+                        <div className={`p-1 rounded-lg transition-colors ${currentTab === 'assignments' ? 'bg-accent/10' : 'bg-transparent'}`}>
+                            <BookOpen size={20} strokeWidth={currentTab === 'assignments' ? 2.5 : 2} />
+                        </div>
+                        <span className="text-[10px] font-bold">Assignment</span>
+                    </button>
+
+                    <button
+                        onClick={() => onTabChange('timer')}
+                        className={`flex flex-col items-center gap-1 transition-all duration-300 ${currentTab === 'timer' ? 'text-accent scale-110' : 'text-white/40 hover:text-white active:scale-95'}`}
+                    >
+                        <div className={`p-1 rounded-lg transition-colors ${currentTab === 'timer' ? 'bg-accent/10' : 'bg-transparent'}`}>
+                            <Brain size={20} strokeWidth={currentTab === 'timer' ? 2.5 : 2} />
+                        </div>
+                        <span className="text-[10px] font-bold">Clutch</span>
+                    </button>
+
+                    <div className="w-px h-8 bg-white/10 mx-1"></div>
+
+                    <button
+                        onClick={() => onAddClick(currentTab === 'assignments' ? { category: 'task' } : { category: 'event' })}
+                        className="w-12 h-12 bg-accent rounded-2xl flex items-center justify-center text-black shadow-lg shadow-accent/20 hover:scale-105 transition-all active:scale-95 hover:shadow-accent/40"
+                    >
+                        <Plus size={24} strokeWidth={3} />
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };
